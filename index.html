@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07101e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Triad Solver">
+<title>Triad Solver</title>
+<style>
+:root{color-scheme:dark;--bg:#07101e;--panel:#101b2d;--panel2:#142137;--line:#30415d;--text:#f6f8fc;--muted:#aeb9cc;--accent:#6fd5ff;--gold:#f5bd3b;--active:#21455f}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}body{height:100dvh}
+.app{width:100%;height:100dvh;max-width:1500px;margin:auto;padding:max(7px,env(safe-area-inset-top)) max(9px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:7px}
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px}.top{padding:9px 11px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}select{width:100%;height:38px;background:#0b1526;color:var(--text);border:1px solid #40506d;border-radius:10px;padding:0 9px;font-size:16px}.answer{text-align:center;padding:4px 0}.formula{color:var(--gold);font-size:20px;font-weight:800}.notes{font-size:clamp(28px,7vw,46px);font-weight:850;line-height:1.04;margin-top:2px}.name{font-size:15px}.sigline{font-size:11px;color:var(--muted);margin-top:1px}.rootlabel{font-size:10px;color:var(--muted);margin:3px 0}.roots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.root{height:29px;border:1px solid #3b4b68;border-radius:8px;background:#0b1526;color:var(--text);font-size:13px;font-weight:800}.root.active{background:var(--active);border-color:var(--accent)}
+.summary{display:grid;grid-template-columns:1fr 1fr 1.25fr;overflow:hidden}.summary>div{padding:5px 4px;text-align:center;border-right:1px solid var(--line)}.summary>div:last-child{border-right:0}.kicker{font-size:8px;color:var(--muted);font-weight:700;letter-spacing:.05em}.value{font-size:15px;font-weight:800;margin-top:1px}.detail{font-size:9px;color:var(--muted);line-height:1.1}.detail.accent{color:var(--accent)}
+.cof{min-height:0;padding:4px 5px 5px;display:grid;grid-template-rows:auto minmax(0,1fr) auto}.cof-head{text-align:center}.cof-title{color:var(--accent);font-size:clamp(18px,2.7vw,26px);font-weight:900;letter-spacing:.06em}.cof-sub{color:#eef3fb;font-size:clamp(12px,1.8vw,17px);font-weight:650;margin-top:1px}.cof-wrap{min-height:0}.cof svg{display:block;width:100%;height:100%}.legend{border-top:1px solid var(--line);text-align:center;color:#eef3fb;font-size:clamp(12px,1.7vw,16px);font-weight:650;padding-top:4px}.legend b{color:var(--accent)}
+.cof-node circle{fill:#0d1728;stroke:#607089;stroke-width:2}.cof-node .maj{fill:#f5f7fb;font-size:34px;font-weight:900}.cof-node .min{fill:#d6deec;font-size:24px;font-weight:800}.cof-node.active circle{fill:#214a66;stroke:#6fd5ff;stroke-width:4}.cof-node.active .maj{font-size:38px}.acc-count{fill:#ffc21c;font-size:30px;font-weight:900}.acc-list{fill:#f4f7fc;font-size:22px;font-weight:850}.centerBox{fill:#0c1729;stroke:#33445f}.centerTitle{fill:#6fd5ff;font-size:22px;font-weight:800}.centerKey{fill:#f5f7fb;font-size:29px;font-weight:900}.centerSig{fill:#f0f4fa;font-size:18px;font-weight:700}
+@media(min-width:900px){.app{grid-template-columns:minmax(390px,.72fr) minmax(560px,1.28fr);grid-template-rows:auto minmax(0,1fr);gap:11px;padding:13px}.top{grid-column:1;grid-row:1/span 2;display:flex;flex-direction:column;justify-content:center;padding:17px}.summary{grid-column:2;grid-row:1}.cof{grid-column:2;grid-row:2}.roots{grid-template-columns:repeat(4,1fr);gap:7px}.root{height:44px;font-size:16px}select{height:50px;font-size:19px}.answer{padding:18px 0 12px}.formula{font-size:27px}.name{font-size:19px}.sigline{font-size:14px}.cof-title{font-size:18px}.cof-sub{font-size:11px}.value{font-size:20px}.detail{font-size:11px}.kicker{font-size:10px}}
+@media(max-height:690px) and (max-width:899px){.app{gap:4px}.top{padding:6px 8px}select{height:33px}.answer{padding:2px 0}.formula{font-size:17px}.notes{font-size:26px}.root{height:25px}.summary>div{padding:3px}.cof{padding:2px 4px}.cof-title{font-size:11px}}
+</style>
+
+</head>
+<body>
+<main class="app">
+<section class="panel top">
+  <div class="controls">
+    <div><label for="keySelect">Reference key</label><select id="keySelect">
+      <option value="C major">C major</option><option value="G major">G major</option><option value="D major">D major</option><option value="A major">A major</option><option value="E major">E major</option><option value="B major">B major</option><option value="F♯ major">F♯ major</option><option value="D♭ major">D♭ major</option><option value="A♭ major">A♭ major</option><option value="E♭ major">E♭ major</option><option value="B♭ major">B♭ major</option><option value="F major">F major</option>
+    </select></div>
+    <div><label for="triadSelect">Triad</label><select id="triadSelect"><option value="major">Major</option><option value="minor">Minor</option><option value="diminished">Diminished</option><option value="augmented">Augmented</option></select></div>
+  </div>
+  <div class="answer"><div id="formula" class="formula">1–3–5</div><div id="triadNotes" class="notes">C – E – G</div><div id="triadName" class="name">C major</div><div id="keySigLine" class="sigline">Key signature: No sharps or flats</div></div>
+  <div class="rootlabel">Any root:</div>
+  <div class="roots" id="rootGrid"><button class="root active" data-root="C">C</button><button class="root" data-root="C♯">C♯</button><button class="root" data-root="D">D</button><button class="root" data-root="E♭">E♭</button><button class="root" data-root="E">E</button><button class="root" data-root="F">F</button><button class="root" data-root="F♯">F♯</button><button class="root" data-root="G">G</button><button class="root" data-root="A♭">A♭</button><button class="root" data-root="A">A</button><button class="root" data-root="B♭">B♭</button><button class="root" data-root="B">B</button></div>
+</section>
+<section class="panel summary"><div><div class="kicker">KEY</div><div id="summaryKey" class="value">C major</div><div id="summaryKeyDetail" class="detail">No sharps or flats</div></div><div><div class="kicker">RELATIVE MINOR</div><div id="summaryMinor" class="value">A minor</div><div class="detail accent">6th degree</div></div><div><div class="kicker">KEY SIGNATURE</div><div id="summaryCount" class="value">0</div><div id="summaryAcc" class="detail">No sharps or flats</div></div></section>
+<section class="panel cof">
+ <div class="cof-head"><div class="cof-title">CIRCLE OF FIFTHS</div><div class="cof-sub">Sharps → clockwise &nbsp; | &nbsp; Flats → counterclockwise</div></div>
+ <div class="cof-wrap">
+ <svg viewBox="0 0 720 540" role="img" aria-label="Circle of Fifths with major keys, relative minors, and accidentals">
+  <circle cx="360" cy="270" r="185" fill="none" stroke="#42526d" stroke-width="5"/>
+  <!-- nodes: clockwise C G D A E B F# then flats counterclockwise around lower-left -->
+  <g class="cof-node active" data-key="C major" transform="translate(360 85)"><circle r="45"/><text class="maj" text-anchor="middle" y="-3">C</text><text class="min" text-anchor="middle" y="22">Am</text></g>
+  <g class="cof-node" data-key="G major" transform="translate(452.5 109.8)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">G</text><text class="min" text-anchor="middle" y="22">Em</text></g>
+  <g class="cof-node" data-key="D major" transform="translate(520.2 177.5)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">D</text><text class="min" text-anchor="middle" y="22">Bm</text></g>
+  <g class="cof-node" data-key="A major" transform="translate(545 270)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">A</text><text class="min" text-anchor="middle" y="22">F♯m</text></g>
+  <g class="cof-node" data-key="E major" transform="translate(520.2 362.5)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">E</text><text class="min" text-anchor="middle" y="22">C♯m</text></g>
+  <g class="cof-node" data-key="B major" transform="translate(452.5 430.2)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">B</text><text class="min" text-anchor="middle" y="22">G♯m</text></g>
+  <g class="cof-node" data-key="F♯ major" transform="translate(360 455)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">F♯</text><text class="min" text-anchor="middle" y="22">D♯m</text></g>
+  <g class="cof-node" data-key="D♭ major" transform="translate(267.5 430.2)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">D♭</text><text class="min" text-anchor="middle" y="22">B♭m</text></g>
+  <g class="cof-node" data-key="A♭ major" transform="translate(199.8 362.5)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">A♭</text><text class="min" text-anchor="middle" y="22">Fm</text></g>
+  <g class="cof-node" data-key="E♭ major" transform="translate(175 270)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">E♭</text><text class="min" text-anchor="middle" y="22">Cm</text></g>
+  <g class="cof-node" data-key="B♭ major" transform="translate(199.8 177.5)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">B♭</text><text class="min" text-anchor="middle" y="22">Gm</text></g>
+  <g class="cof-node" data-key="F major" transform="translate(267.5 109.8)"><circle r="41"/><text class="maj" text-anchor="middle" y="-3">F</text><text class="min" text-anchor="middle" y="22">Dm</text></g>
+
+  <!-- accidental labels are static so always visible -->
+  <text class="acc-count" x="510" y="48" text-anchor="middle">1♯</text><text class="acc-list" x="510" y="70" text-anchor="middle">F♯</text>
+  <text class="acc-count" x="625" y="125" text-anchor="middle">2♯</text><text class="acc-list" x="625" y="147" text-anchor="middle">F♯ C♯</text>
+  <text class="acc-count" x="675" y="251" text-anchor="middle">3♯</text><text class="acc-list" x="675" y="273" text-anchor="middle">F♯ C♯ G♯</text>
+  <text class="acc-count" x="630" y="401" text-anchor="middle">4♯</text><text class="acc-list" x="630" y="423" text-anchor="middle">F♯ C♯ G♯ D♯</text>
+  <text class="acc-count" x="515" y="501" text-anchor="middle">5♯</text><text class="acc-list" x="515" y="523" text-anchor="middle">F C G D A</text>
+  <text class="acc-count" x="360" y="535" text-anchor="middle">6♯ / 6♭</text>
+  <text class="acc-count" x="205" y="501" text-anchor="middle">5♭</text><text class="acc-list" x="205" y="523" text-anchor="middle">B E A D G</text>
+  <text class="acc-count" x="90" y="401" text-anchor="middle">4♭</text><text class="acc-list" x="90" y="423" text-anchor="middle">B E A D</text>
+  <text class="acc-count" x="45" y="251" text-anchor="middle">3♭</text><text class="acc-list" x="45" y="273" text-anchor="middle">B E A</text>
+  <text class="acc-count" x="95" y="125" text-anchor="middle">2♭</text><text class="acc-list" x="95" y="147" text-anchor="middle">B E</text>
+  <text class="acc-count" x="210" y="48" text-anchor="middle">1♭</text><text class="acc-list" x="210" y="70" text-anchor="middle">B♭</text>
+
+  <rect class="centerBox" x="285" y="220" width="150" height="100" rx="14"/>
+  <text class="centerTitle" x="360" y="244" text-anchor="middle">Current Key</text>
+  <text id="centerKey" class="centerKey" x="360" y="273" text-anchor="middle">C major</text>
+  <text id="centerSig" class="centerSig" x="360" y="299" text-anchor="middle">No sharps or flats</text>
+ </svg>
+ </div>
+ <div class="legend"><b>ACCIDENTALS</b> &nbsp; ♯ order: F C G D A E B &nbsp; | &nbsp; ♭ order: B E A D G C F</div>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+const KEYS={
+'C major':{root:'C',minor:'A minor',sig:'No sharps or flats',count:'0'},
+'G major':{root:'G',minor:'E minor',sig:'F♯',count:'1♯'},
+'D major':{root:'D',minor:'B minor',sig:'F♯, C♯',count:'2♯'},
+'A major':{root:'A',minor:'F♯ minor',sig:'F♯, C♯, G♯',count:'3♯'},
+'E major':{root:'E',minor:'C♯ minor',sig:'F♯, C♯, G♯, D♯',count:'4♯'},
+'B major':{root:'B',minor:'G♯ minor',sig:'F♯, C♯, G♯, D♯, A♯',count:'5♯'},
+'F♯ major':{root:'F♯',minor:'D♯ minor',sig:'F♯, C♯, G♯, D♯, A♯, E♯',count:'6♯'},
+'D♭ major':{root:'D♭',minor:'B♭ minor',sig:'B♭, E♭, A♭, D♭, G♭',count:'5♭'},
+'A♭ major':{root:'A♭',minor:'F minor',sig:'B♭, E♭, A♭, D♭',count:'4♭'},
+'E♭ major':{root:'E♭',minor:'C minor',sig:'B♭, E♭, A♭',count:'3♭'},
+'B♭ major':{root:'B♭',minor:'G minor',sig:'B♭, E♭',count:'2♭'},
+'F major':{root:'F',minor:'D minor',sig:'B♭',count:'1♭'}};
+const FORM={major:{label:'major',formula:'1–3–5',ints:[0,4,7],steps:[0,2,4]},minor:{label:'minor',formula:'1–♭3–5',ints:[0,3,7],steps:[0,2,4]},diminished:{label:'diminished',formula:'1–♭3–♭5',ints:[0,3,6],steps:[0,2,4]},augmented:{label:'augmented',formula:'1–3–♯5',ints:[0,4,8],steps:[0,2,4]}};
+const P={'C':0,'C♯':1,'D♭':1,'D':2,'D♯':3,'E♭':3,'E':4,'E♯':5,'F':5,'F♯':6,'G♭':6,'G':7,'G♯':8,'A♭':8,'A':9,'A♯':10,'B♭':10,'B':11};
+const L=['C','D','E','F','G','A','B'],N={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function spell(root,semi,step){const target=L[(L.indexOf(root[0])+step)%7],p=(P[root]+semi)%12,d=(p-N[target]+12)%12;return d===0?target:d===1?target+'♯':d===11?target+'♭':d===2?target+'𝄪':d===10?target+'𝄫':target}
+function tones(root,type){const f=FORM[type];return f.ints.map((x,i)=>spell(root,x,f.steps[i]))}
+const key=document.getElementById('keySelect'),type=document.getElementById('triadSelect'),grid=document.getElementById('rootGrid');let direct=null;
+function update(){const k=KEYS[key.value],f=FORM[type.value],root=direct||k.root,t=tones(root,type.value);document.getElementById('formula').textContent=f.formula;document.getElementById('triadNotes').textContent=t.join(' – ');document.getElementById('triadName').textContent=root+' '+f.label;document.getElementById('keySigLine').textContent='Key signature: '+k.sig;document.getElementById('summaryKey').textContent=key.value;document.getElementById('summaryKeyDetail').textContent=k.sig;document.getElementById('summaryMinor').textContent=k.minor;document.getElementById('summaryCount').textContent=k.count;document.getElementById('summaryAcc').textContent=k.sig;document.getElementById('centerKey').textContent=key.value;document.getElementById('centerSig').textContent=k.sig;document.querySelectorAll('.root').forEach(b=>b.classList.toggle('active',b.dataset.root===root));document.querySelectorAll('.cof-node').forEach(g=>g.classList.toggle('active',g.dataset.key===key.value))}
+key.addEventListener('change',()=>{direct=null;update()});type.addEventListener('change',update);grid.addEventListener('click',e=>{const b=e.target.closest('.root');if(b){direct=b.dataset.root;update()}});document.querySelectorAll('.cof-node').forEach(g=>g.addEventListener('click',()=>{key.value=g.dataset.key;direct=null;update()}));update();
+})();
+</script>
+
+<script>
+(function(){
+  function approvedCofColors(){
+    const svg=document.getElementById('cofSvg');
+    if(!svg)return;
+    const texts=[...svg.querySelectorAll('text')];
+    texts.forEach(t=>{
+      const v=(t.textContent||'').trim();
+      if(/^\d+#$/.test(v) || /♯|#/.test(v)){
+        t.style.fill='#ffc21c';
+        t.style.fontWeight='900';
+      }
+      if(/^\d+[b♭]$/.test(v) || /♭/.test(v)){
+        t.style.fill='#f35b9a';
+        t.style.fontWeight='900';
+      }
+    });
+  }
+  approvedCofColors();
+  window.addEventListener('load',approvedCofColors);
+})();
+</script>
+
+
+</body></html>
