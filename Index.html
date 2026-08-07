@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Triad Solver">
+<title>Triad Solver</title>
+<style>
+:root{color-scheme:dark;--bg:#0a1020;--panel:#121b2d;--line:#2a3853;--text:#f7f9fc;--muted:#aeb8cb;--accent:#7dd3fc;--gold:#fbbf24}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+main{padding:max(16px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom));max-width:680px;margin:auto}
+h1{font-size:24px;margin:0 0 4px} .muted{color:var(--muted);font-size:13px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+select{width:100%;font-size:17px;padding:11px;border-radius:11px;background:#0d1526;color:white;border:1px solid #35445f}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.answer{text-align:center;padding:18px 10px} .formula{color:var(--gold);font-weight:800;font-size:18px}
+.notes{font-size:30px;font-weight:850;margin:7px 0} .sig{color:var(--muted);font-size:13px}
+.roots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+button{border:1px solid #36445e;background:#0e1728;color:#fff;border-radius:10px;padding:11px 4px;font-weight:800;font-size:16px}
+button.active{border-color:var(--accent);background:#1b3b52}
+.matrix{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;min-width:700px;width:100%;font-size:13px} th,td{padding:9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th:first-child,td:first-child{position:sticky;left:0;background:#111b2d;text-align:left;z-index:2} thead th{background:#162137}
+.hit{background:#21435c} .help{font-size:13px;color:var(--muted);line-height:1.45}
+</style>
+</head>
+<body><main>
+<h1>Triad Solver</h1><div class="muted">Phone version — quick lookup + full key matrix.</div>
+
+<div class="box">
+  <div class="row">
+    <div><label for="key">Reference key</label><select id="key"></select></div>
+    <div><label for="type">Triad</label><select id="type"><option value="major">Major</option><option value="minor">Minor</option><option value="diminished">Diminished</option><option value="augmented">Augmented</option></select></div>
+  </div>
+  <div class="answer"><div id="formula" class="formula">1–3–5</div><div id="notes" class="notes">C – E – G</div><div id="label">C major</div><div id="sig" class="sig"></div></div>
+  <div class="muted">Any root:</div><div id="roots" class="roots"></div>
+</div>
+
+<div class="matrix"><table>
+<thead><tr><th>Key</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>Accidentals</th></tr></thead>
+<tbody id="body"></tbody></table></div>
+
+<div class="box help"><b>Use:</b> the key row shows all seven scale notes and which notes are sharp or flat. Major = 1–3–5; minor = 1–♭3–5; diminished = 1–♭3–♭5; augmented = 1–3–♯5.</div>
+</main>
+<script>
+
+const KEYS = [
+  {name:'C major', root:'C', notes:['C','D','E','F','G','A','B'], sig:'No sharps or flats'},
+  {name:'G major', root:'G', notes:['G','A','B','C','D','E','F♯'], sig:'F♯'},
+  {name:'D major', root:'D', notes:['D','E','F♯','G','A','B','C♯'], sig:'F♯, C♯'},
+  {name:'A major', root:'A', notes:['A','B','C♯','D','E','F♯','G♯'], sig:'F♯, C♯, G♯'},
+  {name:'E major', root:'E', notes:['E','F♯','G♯','A','B','C♯','D♯'], sig:'F♯, C♯, G♯, D♯'},
+  {name:'B major', root:'B', notes:['B','C♯','D♯','E','F♯','G♯','A♯'], sig:'F♯, C♯, G♯, D♯, A♯'},
+  {name:'F♯ major', root:'F♯', notes:['F♯','G♯','A♯','B','C♯','D♯','E♯'], sig:'F♯, C♯, G♯, D♯, A♯, E♯'},
+  {name:'D♭ major', root:'D♭', notes:['D♭','E♭','F','G♭','A♭','B♭','C'], sig:'B♭, E♭, A♭, D♭, G♭'},
+  {name:'A♭ major', root:'A♭', notes:['A♭','B♭','C','D♭','E♭','F','G'], sig:'B♭, E♭, A♭, D♭'},
+  {name:'E♭ major', root:'E♭', notes:['E♭','F','G','A♭','B♭','C','D'], sig:'B♭, E♭, A♭'},
+  {name:'B♭ major', root:'B♭', notes:['B♭','C','D','E♭','F','G','A'], sig:'B♭, E♭'},
+  {name:'F major', root:'F', notes:['F','G','A','B♭','C','D','E'], sig:'B♭'}
+];
+
+const CHROMA = {'C':0,'C♯':1,'D♭':1,'D':2,'D♯':3,'E♭':3,'E':4,'E♯':5,'F':5,'F♯':6,'G♭':6,'G':7,'G♯':8,'A♭':8,'A':9,'A♯':10,'B♭':10,'B':11,'C♭':11,'B♯':0};
+const LETTERS = ['C','D','E','F','G','A','B'];
+
+function parseNote(note){
+  return {letter: note[0], accidental: note.slice(1)};
+}
+function naturalPitch(letter){
+  return {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[letter];
+}
+function accidentalFor(letter, pitch){
+  const diff = (pitch - naturalPitch(letter) + 12) % 12;
+  if (diff === 0) return letter;
+  if (diff === 1) return letter + '♯';
+  if (diff === 11) return letter + '♭';
+  if (diff === 2) return letter + '𝄪';
+  if (diff === 10) return letter + '𝄫';
+  return letter;
+}
+function shiftDiatonic(note, semitones, degreeSteps){
+  const p = (CHROMA[note] + semitones + 12) % 12;
+  const {letter} = parseNote(note);
+  const idx = LETTERS.indexOf(letter);
+  const targetLetter = LETTERS[(idx + degreeSteps + 7) % 7];
+  return accidentalFor(targetLetter, p);
+}
+const FORMULAS = {
+  major: {label:'Major', formula:'1–3–5', offsets:[0,4,7], steps:[0,2,4]},
+  minor: {label:'Minor', formula:'1–♭3–5', offsets:[0,3,7], steps:[0,2,4]},
+  diminished: {label:'Diminished', formula:'1–♭3–♭5', offsets:[0,3,6], steps:[0,2,4]},
+  augmented: {label:'Augmented', formula:'1–3–♯5', offsets:[0,4,8], steps:[0,2,4]}
+};
+function triadFromRoot(root, type){
+  const f = FORMULAS[type];
+  return f.offsets.map((off,i)=> shiftDiatonic(root, off, f.steps[i]));
+}
+
+const key=document.getElementById('key'),type=document.getElementById('type'),body=document.getElementById('body'),rootsEl=document.getElementById('roots');
+KEYS.forEach((k,i)=>{key.add(new Option(k.name,i)); body.insertAdjacentHTML('beforeend',`<tr data-i="${i}"><td>${k.name}</td>${k.notes.map((n,j)=>`<td data-d="${j+1}">${n}</td>`).join('')}<td>${k.sig}</td></tr>`)});
+const roots=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B']; let direct=null;
+roots.forEach(r=>{const b=document.createElement('button');b.textContent=r;b.dataset.root=r;rootsEl.appendChild(b)});
+function update(){
+ const k=KEYS[+key.value], f=FORMULAS[type.value], root=direct||k.root, tri=triadFromRoot(root,type.value);
+ document.getElementById('formula').textContent=f.formula; document.getElementById('notes').textContent=tri.join(' – ');
+ document.getElementById('label').textContent=`${root} ${f.label.toLowerCase()}`;
+ document.getElementById('sig').textContent=`Key signature: ${k.sig}`;
+ body.querySelectorAll('tr').forEach((tr,i)=>{tr.querySelectorAll('td').forEach(td=>td.classList.remove('hit')); if(i===+key.value)[1,3,5].forEach(d=>tr.querySelector(`[data-d="${d}"]`).classList.add('hit'))});
+ rootsEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.root===root));
+}
+key.addEventListener('change',()=>{direct=null;update()});type.addEventListener('change',update);rootsEl.addEventListener('click',e=>{if(e.target.matches('button')){direct=e.target.dataset.root;update()}});update();
+</script></body></html>
